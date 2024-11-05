@@ -1,0 +1,48 @@
+# Rust build artifacts
+/target/
+/Cargo.lock
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Jupyter Notebook outputs
+*.ipynb
+
+# Rust specific files
+*.rs.bk
+*.rs.old
+
+# Cargo-specific files
+**/*.rs.bk
+**/*.rs.old
+
+# VSCode settings
+.vscode/
+.history/
+*.code-workspace
+
+# macOS system files
+.DS_Store
+
+# Linux system files
+*~
+
+# Windows system files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Other IDEs and editors
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Logs
+*.log
+
+# Environment variables
+.env
+
+# db files
+*.db
+*.sqlite
