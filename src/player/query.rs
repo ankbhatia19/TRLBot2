@@ -14,7 +14,9 @@ pub async fn init() -> Result<()> {
         player_id INTEGER NOT NULL,
         usernames TEXT,
         PRIMARY KEY (player_id));
-        "#, ())?;
+        "#,
+        params![],
+    )?;
 
     Ok(())
 }

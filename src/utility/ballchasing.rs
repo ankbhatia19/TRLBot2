@@ -1,49 +1,47 @@
-use reqwest::blocking::{Client, Response};
+use reqwest::{Client, Response};
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION};
-use reqwest::blocking::multipart;
+use reqwest::multipart;
 use serde_json::{json, Value};
-use std::fs;
-use std::thread::sleep;
-use std::time::Duration;
+use std::{fs, time::Duration};
+use tokio::time::sleep;
+use once_cell::sync::Lazy;
 
 // Constants for token and group_id (assuming they are static and set once)
 static TOKEN: &str = env!("BALLCHASING_TOKEN");
 static GROUP_ID: &str = env!("BALLCHASING_GROUP");
 
-// Initialize the HTTP client once
-fn get_client() -> Client {
+// Initialize the HTTP client once and make it globally accessible
+static CLIENT: Lazy<Client> = Lazy::new(|| {
     Client::builder()
-        .danger_accept_invalid_certs(false)
         .build()
         .expect("Failed to build HTTP client")
-}
+});
 
 // Function to upload a replay file
-pub fn upload(path: &str, replay_name: &str) -> Value {
-    let client = get_client();
+pub async fn upload(path: &str, replay_name: &str) -> Result<Value, reqwest::Error> {
     let file_content = fs::read(path).expect("Failed to read file");
 
     let form = multipart::Form::new()
         .part("file", multipart::Part::bytes(file_content)
             .file_name(replay_name.to_string())
-            .mime_str("multipart/form-data").unwrap());
+            .mime_str("multipart/form-data")?
+        );
 
     let mut headers = HeaderMap::new();
     headers.insert(AUTHORIZATION, HeaderValue::from_str(TOKEN).unwrap());
 
-    let response = client
+    let response = CLIENT
         .post("https://ballchasing.com/api/v2/upload?visibility=public")
         .headers(headers)
         .multipart(form)
         .send()
-        .expect("Failed to upload");
+        .await?;
 
-    response.json().expect("Failed to parse response as JSON")
+    response.json().await
 }
 
-// Function to create a new subgroup for a match
-pub fn create(match_id: i32) -> Value {
-    let client = get_client();
+// Function to create a new subgroup for a match    
+pub async fn create(match_id: i32) -> Result<Value, reqwest::Error> {
     let post_body = json!({
         "name": match_id.to_string(),
         "parent": GROUP_ID,
@@ -54,19 +52,18 @@ pub fn create(match_id: i32) -> Value {
     let mut headers = HeaderMap::new();
     headers.insert(AUTHORIZATION, HeaderValue::from_str(TOKEN).unwrap());
 
-    let response = client
+    let response = CLIENT
         .post("https://ballchasing.com/api/groups")
         .headers(headers)
         .json(&post_body)
         .send()
-        .expect("Failed to create group");
+        .await?;
 
-    response.json().expect("Failed to parse response as JSON")
+    response.json().await
 }
 
 // Function to group a replay under a specific group
-pub fn group(replay_name: &str, group: &str, ballchasing_id: &str) {
-    let client = get_client();
+pub async fn group(replay_name: &str, group: &str, ballchasing_id: &str) -> Result<(), reqwest::Error> {
     let patch_body = json!({
         "title": replay_name,
         "group": group
@@ -75,38 +72,39 @@ pub fn group(replay_name: &str, group: &str, ballchasing_id: &str) {
     let mut headers = HeaderMap::new();
     headers.insert(AUTHORIZATION, HeaderValue::from_str(TOKEN).unwrap());
 
-    client
+    CLIENT
         .patch(&format!("https://ballchasing.com/api/replays/{}", ballchasing_id))
         .headers(headers)
         .json(&patch_body)
         .send()
-        .expect("Failed to patch group");
+        .await?;
+
+    Ok(())
 }
 
 // Function to pull a replay's status, retrying if it is still pending
-pub fn pull(ballchasing_id: &str) -> Value {
-    let client = get_client();
+pub async fn pull(ballchasing_id: &str) -> Result<Value, reqwest::Error> {
     let get_endpoint = format!("https://ballchasing.com/api/replays/{}", ballchasing_id);
     let mut replay_data;
 
     loop {
-        sleep(Duration::from_millis(500));
+        sleep(Duration::from_millis(500)).await;
 
         let mut headers = HeaderMap::new();
         headers.insert(AUTHORIZATION, HeaderValue::from_str(TOKEN).unwrap());
 
-        let response: Response = client
+        let response: Response = CLIENT
             .get(&get_endpoint)
             .headers(headers)
             .send()
-            .expect("Failed to pull replay");
+            .await?;
 
-        replay_data = response.json::<Value>().expect("Failed to parse response as JSON");
+        replay_data = response.json::<Value>().await?;
 
         if replay_data["status"].as_str() != Some("pending") {
             break;
         }
     }
 
-    replay_data
+    Ok(replay_data)
 }
