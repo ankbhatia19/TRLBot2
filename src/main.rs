@@ -16,6 +16,8 @@ async fn main() {
     // Initialize database & all tables
     player::query::init().await.unwrap();
     stats::query::init().await.unwrap();
+    r#match::query::init().await.unwrap();
+    team::query::init().await.unwrap();
 
     let token = env!("DISCORD_TOKEN");
     let intents = serenity::GatewayIntents::non_privileged();
@@ -25,7 +27,8 @@ async fn main() {
             commands: vec![
                 // Command list
                 player::cmd::player(),
-                r#match::cmd::r#match()
+                r#match::cmd::r#match(),
+                team::cmd::team(),
                 // End command list
             ], ..Default::default()
         })
@@ -36,7 +39,7 @@ async fn main() {
                 );
 
                 // serenity::Command::set_global_commands(ctx, create_commands).await?;
-                serenity::GuildId::new(1288596199712096357)
+                serenity::GuildId::new(483325630692327434)
                     .set_commands(ctx, create_commands)
                     .await?;
 

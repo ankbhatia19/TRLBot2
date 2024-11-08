@@ -1,4 +1,4 @@
-use rusqlite::{params, Connection, Result};
+use rusqlite::{params, Result};
 use serde_json;
 use crate::utility;
 
@@ -136,6 +136,7 @@ pub async fn insert_raw(
 
 }
 
+// TODO: return both values instead of just filename
 pub async fn get_raw(
     filename: &str
 ) -> Result<String> {

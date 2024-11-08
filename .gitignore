@@ -46,3 +46,6 @@ Desktop.ini
 # db files
 *.db
 *.sqlite
+
+# Replays folder
+/Replays/

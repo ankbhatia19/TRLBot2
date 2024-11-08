@@ -3,10 +3,10 @@ use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION};
 use reqwest::multipart;
 use serde_json::{json, Value};
 use std::{fs, time::Duration};
-use tokio::time::sleep;
+use tokio::sync::Semaphore;
+use tokio::time::{sleep, Instant};
 use once_cell::sync::Lazy;
 
-// Constants for token and group_id (assuming they are static and set once)
 static TOKEN: &str = env!("BALLCHASING_TOKEN");
 static GROUP_ID: &str = env!("BALLCHASING_GROUP");
 
@@ -17,8 +17,23 @@ static CLIENT: Lazy<Client> = Lazy::new(|| {
         .expect("Failed to build HTTP client")
 });
 
+// Semaphore to manage rate limiting, allowing up to 4 requests per second
+static SEMAPHORE: Lazy<Semaphore> = Lazy::new(|| Semaphore::new(4));
+
+// Helper function to enforce rate limiting
+async fn rate_limited() {
+    let permit = SEMAPHORE.acquire().await.unwrap();
+    tokio::spawn(async move {
+        // Drop permit after 1 second to allow the next batch
+        sleep(Duration::from_secs(1)).await;
+        drop(permit);
+    });
+}
+
 // Function to upload a replay file
 pub async fn upload(path: &str, replay_name: &str) -> Result<Value, reqwest::Error> {
+    rate_limited().await;
+
     let file_content = fs::read(path).expect("Failed to read file");
 
     let form = multipart::Form::new()
@@ -40,8 +55,10 @@ pub async fn upload(path: &str, replay_name: &str) -> Result<Value, reqwest::Err
     response.json().await
 }
 
-// Function to create a new subgroup for a match    
+// Function to create a new subgroup for a match
 pub async fn create(match_id: i32) -> Result<Value, reqwest::Error> {
+    rate_limited().await;
+
     let post_body = json!({
         "name": match_id.to_string(),
         "parent": GROUP_ID,
@@ -64,6 +81,8 @@ pub async fn create(match_id: i32) -> Result<Value, reqwest::Error> {
 
 // Function to group a replay under a specific group
 pub async fn group(replay_name: &str, group: &str, ballchasing_id: &str) -> Result<(), reqwest::Error> {
+    rate_limited().await;
+
     let patch_body = json!({
         "title": replay_name,
         "group": group
@@ -85,10 +104,9 @@ pub async fn group(replay_name: &str, group: &str, ballchasing_id: &str) -> Resu
 // Function to pull a replay's status, retrying if it is still pending
 pub async fn pull(ballchasing_id: &str) -> Result<Value, reqwest::Error> {
     let get_endpoint = format!("https://ballchasing.com/api/replays/{}", ballchasing_id);
-    let mut replay_data;
 
     loop {
-        sleep(Duration::from_millis(500)).await;
+        rate_limited().await;
 
         let mut headers = HeaderMap::new();
         headers.insert(AUTHORIZATION, HeaderValue::from_str(TOKEN).unwrap());
@@ -99,12 +117,12 @@ pub async fn pull(ballchasing_id: &str) -> Result<Value, reqwest::Error> {
             .send()
             .await?;
 
-        replay_data = response.json::<Value>().await?;
+        let replay_data = response.json::<Value>().await?;
 
         if replay_data["status"].as_str() != Some("pending") {
-            break;
+            return Ok(replay_data);
         }
-    }
 
-    Ok(replay_data)
+        sleep(Duration::from_millis(500)).await;  // Wait before retrying
+    }
 }

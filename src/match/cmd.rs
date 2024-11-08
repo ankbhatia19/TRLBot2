@@ -4,7 +4,7 @@ use tokio::fs::{self, File};
 use tokio::io::AsyncWriteExt;
 use std::path::Path;
 use poise::futures_util::future::join_all;
-use crate::{stats, utility, Context, Error};
+use crate::{r#match, stats, utility, Context, Error};
 
 /// TODO: Description
 #[poise::command(slash_command, subcommands("create", "submit", "info"))]
@@ -25,6 +25,7 @@ pub async fn submit(
 ) -> Result<(), Error> {
 
     // TODO: Send 'In Progress' embed
+    ctx.reply(format!("Submitting Match #{}", match_id)).await?;
 
     let save_dir = format!("Replays/{}", match_id);
 
@@ -37,8 +38,6 @@ pub async fn submit(
     let attachments = vec![game_1, game_2, game_3, game_4, game_5, game_6, game_7];
     let attachments: Vec<_> = attachments.into_iter().filter_map(|x| x).collect();
 
-    println!("Attachments: {:?}", attachments);
-
     // TODO: Check if the match_id already has a ballchasing_id in matches table
     let group_data = utility::ballchasing::create(
         match_id
@@ -50,7 +49,8 @@ pub async fn submit(
             Some(e) => { format!("Ballchasing Error: {}", e) }
         }
     })?;
-    println!("{}", serde_json::to_string_pretty(&group_data).unwrap_or(String::new()));
+
+    //println!("{}", serde_json::to_string_pretty(&group_data).unwrap_or(String::new()));
 
 
     // Map each attachment to an asynchronous task to download and save it
@@ -80,7 +80,7 @@ pub async fn submit(
                 &file_path,
                 &attachment.filename
             ).await?;
-            println!("{}", serde_json::to_string_pretty(&upload_data).unwrap_or(String::new()));
+            //println!("{}", serde_json::to_string_pretty(&upload_data).unwrap_or(String::new()));
 
             let ballchasing_id = upload_data["id"].as_str().ok_or_else(|| {
                 match upload_data["error"].as_str() {
@@ -98,7 +98,7 @@ pub async fn submit(
             let game_data = utility::ballchasing::pull(
                 ballchasing_id
             ).await?;
-            println!("{}", serde_json::to_string_pretty(&game_data).unwrap_or(String::new()));
+            //println!("{}", serde_json::to_string_pretty(&game_data).unwrap_or(String::new()));
 
             stats::query::insert_raw(
                 &attachment.filename,
@@ -112,6 +112,8 @@ pub async fn submit(
 
     // Run all download tasks in parallel
     join_all(ballchasing_tasks).await.into_iter().collect::<Result<Vec<_>, _>>()?;
+    println!("Uploading complete for Match #{}.\nBeginning processing...", match_id);
+
 
     Ok(())
 }
@@ -123,7 +125,16 @@ pub async fn create(
     #[description = "TODO: Description"] team_1: serenity::Role,
     #[description = "TODO: Description"] team_2: serenity::Role
 ) -> Result<(), Error> {
-    unimplemented!()
+
+    let team1_id = team_1.id.get();
+    let team2_id = team_2.id.get();
+
+    let match_id = r#match::query::create(team1_id, team2_id).await?;
+
+    // TODO: Embed for succesful match id creation
+    ctx.reply(format!("Created match {}", match_id)).await?;
+
+    Ok(())
 }
 
 /// TODO: Description
