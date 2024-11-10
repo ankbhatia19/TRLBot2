@@ -1,4 +1,4 @@
-use rusqlite::{params, Connection, Result};
+use rusqlite::{params, Result};
 use serde_json;
 use rand::Rng;
 use crate::utility;
@@ -94,4 +94,41 @@ pub async fn get_teams(match_id: i32) -> Result<(u64, u64)> {
     query.query_row(params![match_id], |row| {
         Ok((row.get(0)?, row.get(1)?))
     })
+}
+
+pub async fn tally(match_id: i32) -> Result<Vec<(i32, i32, i32)>> {
+
+    let db = utility::query::db().await?;
+    let mut game_scores: Vec<(i32, i32, i32)> = vec![];
+
+    let mut query = db.prepare(
+        "SELECT
+            s.game_num,
+            team1.team_id AS team1_id,
+            team2.team_id AS team2_id,
+            COALESCE(SUM(CASE WHEN s.player_id IN (team1.player1_id, team1.player2_id, team1.player3_id) THEN s.goals END), 0) AS team1_goals,
+            COALESCE(SUM(CASE WHEN s.player_id IN (team2.player1_id, team2.player2_id, team2.player3_id) THEN s.goals END), 0) AS team2_goals
+        FROM
+            stats as s
+        JOIN
+            matches AS m ON s.match_id = m.match_id
+        JOIN
+            teams AS team1 ON m.team1_id = team1.team_id
+        JOIN
+            teams AS team2 ON m.team2_id = team2.team_id
+        WHERE
+            s.match_id = ?
+        GROUP BY
+            s.game_num;"
+    )?;
+
+    let rows = query.query_map(params![match_id], |row| {
+        Ok((row.get(0)?, row.get(3)?, row.get(4)?))
+    })?;
+
+    for row_result in rows {
+        game_scores.push(row_result?); // Unwrap each Result from `rows` and push to `game_scores`
+    }
+
+    Ok(game_scores)
 }

@@ -106,10 +106,12 @@ pub async fn submit(
 
     let mut unregistered: Vec<&str> = vec![];
     let mut teamless: Vec<u64> = vec![];
-    let (team1_id, team2_id) = r#match::query::get_teams(match_id).await?;
-    let data_raw_per_game = stats::query::get_raw(match_id).await?;
 
-    for (game_num, data) in data_raw_per_game.iter().enumerate() {
+    let (team1_id, team2_id) = r#match::query::get_teams(match_id).await?;
+    let data_per_game = stats::query::get_raw(match_id).await?;
+
+    // TODO: Much better logging needed
+    for (game_num, data) in data_per_game.iter().enumerate() {
 
         for team in vec!["blue", "orange"].iter() {
 
@@ -160,9 +162,16 @@ pub async fn submit(
 
     if !unregistered.is_empty() {
         ctx.reply(format!("The following players are unregistered: {:?}", unregistered)).await?;
-    }
-    if !teamless.is_empty() {
+    } else if !teamless.is_empty() {
         ctx.reply(format!("The following players are not on either team: {:?}", teamless)).await?;
+    } else {
+
+        let scores = r#match::query::tally(match_id).await?;
+
+        for score in scores {
+            ctx.reply(format!("Game {}: {} - {}", score.0, score.1, score.2)).await?;
+        }
+
     }
 
     Ok(())
