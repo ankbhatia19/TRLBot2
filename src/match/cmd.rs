@@ -42,8 +42,6 @@ pub async fn submit(
 
     let group_id = r#match::query::get_ballchasing_id(match_id).await?;
 
-    //println!("{}", serde_json::to_string_pretty(&group_data).unwrap_or(String::new()));
-
 
     // Map each attachment to an asynchronous task to download and save it
     let ballchasing_tasks = attachments.iter().enumerate().map(|(i, attachment)| {
@@ -73,7 +71,6 @@ pub async fn submit(
                 &file_path,
                 &attachment.filename
             ).await?;
-            //println!("{}", serde_json::to_string_pretty(&upload_data).unwrap_or(String::new()));
 
             let ballchasing_id = upload_data["id"].as_str().ok_or_else(|| {
                 match upload_data["error"].as_str() {
@@ -91,7 +88,6 @@ pub async fn submit(
             let game_data = utility::ballchasing::pull(
                 ballchasing_id
             ).await?;
-            //println!("{}", serde_json::to_string_pretty(&game_data).unwrap_or(String::new()));
 
             stats::query::insert_raw(
                 match_id,
@@ -108,16 +104,14 @@ pub async fn submit(
     join_all(ballchasing_tasks).await.into_iter().collect::<Result<Vec<_>, _>>()?;
     println!("Ballchasing tasks complete for Match #{}.\nBeginning processing...", match_id);
 
-    for (game_num, data) in stats::query::get_raw(match_id).await?.iter().enumerate() {
+    let mut unregistered: Vec<&str> = vec![];
+    let mut teamless: Vec<u64> = vec![];
+    let (team1_id, team2_id) = r#match::query::get_teams(match_id).await?;
+    let data_raw_per_game = stats::query::get_raw(match_id).await?;
 
-        let mut unregistered: Vec<&str> = vec![];
-        let mut teamless: Vec<u64> = vec![];
+    for (game_num, data) in data_raw_per_game.iter().enumerate() {
 
-        let (team1_id, team2_id) = r#match::query::get_teams(match_id).await?;
-
-        let teams = ["blue", "orange"];
-
-        for team in teams.iter() {
+        for team in vec!["blue", "orange"].iter() {
 
             let players = data.get(team)
                 .and_then(|team_data| {
@@ -130,58 +124,45 @@ pub async fn submit(
                 let player_name = player.get("name")
                     .ok_or("No player name found in data json")?
                     .as_str()
-                    .unwrap_or_default();
+                    .ok_or("Player name was not a valid string")?;
 
-                let player_id = player::query::get_id(player_name).await;
 
-                match player_id {
-
-                    Ok(player_id) => {
-                        println!("Got player id {} for {}", player_id, player_name);
-                        let player_team = team::query::get_team(player_id).await;
-
-                        match player_team {
-
-                            Ok(player_team) => {
-                                println!("Got team {} for player {}", player_team, player_name);
-
-                                if player_team == team1_id || player_team == team2_id{
-                                    let stats = player.get("stats")
-                                        .ok_or("No player stats found in data json")?;
-
-                                    stats::query::insert(
-                                        player_id,
-                                        match_id,
-                                        (game_num + 1) as i32,
-                                        stats
-                                    ).await?;
-                                    println!("Inserted stats for {} in game {}", player_name, game_num);
-                                } else {
-                                    println!("{} (Team {}) was not on team {} or team {}",
-                                        player_name, player_team, team1_id, team2_id);
-                                    if !teamless.contains(&player_id) {
-                                        teamless.push(player_id);
-                                    }
-                                }
-                            },
-                            Err(rusqlite::Error::QueryReturnedNoRows) => {
-                                if !teamless.contains(&player_id) {
-                                    teamless.push(player_id);
-                                }
-                            },
-                            Err(e) => {}
-                        }
-                    },
-                    Err(rusqlite::Error::QueryReturnedNoRows) => {
-                        if !unregistered.contains(&player_name) {
-                            unregistered.push(player_name);
-                        }
-                    },
-                    Err(e) => {}
+                if !player::query::has_name(player_name).await? {
+                    if !unregistered.contains(&player_name) {
+                        unregistered.push(player_name);
+                    }
+                    continue;
                 }
 
+                let player_id = player::query::get_id(player_name).await?;
+                let player_team = team::query::get_team(player_id).await.unwrap_or_default();
+
+                if player_team == team1_id || player_team == team2_id{
+                    let stats = player.get("stats")
+                    .ok_or("No player stats found in data json")?;
+
+                    stats::query::insert(
+                        player_id,
+                        match_id,
+                        (game_num + 1) as i32,
+                        stats
+                    ).await?;
+                    println!("Inserted stats for {} in game {}", player_name, game_num);
+
+                } else {
+                    if !teamless.contains(&player_id) {
+                        teamless.push(player_id);
+                    }
+                }
             }
         }
+    }
+
+    if !unregistered.is_empty() {
+        ctx.reply(format!("The following players are unregistered: {:?}", unregistered)).await?;
+    }
+    if !teamless.is_empty() {
+        ctx.reply(format!("The following players are not on either team: {:?}", teamless)).await?;
     }
 
     Ok(())
