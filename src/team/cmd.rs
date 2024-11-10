@@ -4,7 +4,7 @@ use crate::{r#match, stats, team, utility, Context, Error};
 use crate::player::cmd::player;
 
 /// TODO: Description
-#[poise::command(slash_command, subcommands("add", "remove"))]
+#[poise::command(slash_command, subcommands("add", "remove", "info"))]
 pub async fn team(ctx: Context<'_>) -> Result<(), Error> { Ok(()) }
 
 /// TODO: Description
@@ -40,6 +40,16 @@ pub async fn add(
     Ok(())
 }
 
+/// TODO: Description
+#[poise::command(slash_command)]
+pub async fn info(
+    ctx: Context<'_>,
+    #[description = "TODO: Description"] team: serenity::Role
+) -> Result<(), Error>{
+    unimplemented!()
+}
+
+/// TODO: Description
 #[poise::command(slash_command)]
 pub async fn remove(
     ctx: Context<'_>,

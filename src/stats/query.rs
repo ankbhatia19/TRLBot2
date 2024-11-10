@@ -11,7 +11,6 @@ pub async fn init() -> Result<()> {
             player_id INTEGER NOT NULL,
             match_id INTEGER NOT NULL,
             game_num INTEGER NOT NULL,
-            ballchasing_id TEXT NOT NULL,
             shots INTEGER,
             shots_against INTEGER,
             goals INTEGER,
@@ -102,10 +101,11 @@ pub async fn init() -> Result<()> {
 
     db.execute(
         "CREATE TABLE IF NOT EXISTS stats_raw (
-            filename TEXT NOT NULL,
+            match_id INTEGER NOT NULL,
             ballchasing_id TEXT NOT NULL,
+            filename TEXT NOT NULL,
             data TEXT,
-            PRIMARY KEY (filename)
+            PRIMARY KEY (match_id, ballchasing_id)
         );",
         params![]
     )?;
@@ -114,52 +114,84 @@ pub async fn init() -> Result<()> {
 }
 
 pub async fn insert_raw(
-    filename: &str,
+    match_id: i32,
     ballchasing_id: &str,
+    filename: &str,
     data: &serde_json::Value
 ) -> Result<()> {
 
     let db = utility::query::db().await?;
 
     let mut query = db.prepare("
-        INSERT INTO stats_raw (filename, ballchasing_id, data)
-        VALUES (?, ?, ?);"
+        INSERT INTO stats_raw (match_id, ballchasing_id, filename, data)
+        VALUES (?, ?, ?, ?);"
     )?;
 
     query.execute(params![
-        filename,
+        match_id,
         ballchasing_id,
+        filename,
         serde_json::to_string_pretty(data).unwrap_or(String::new())
     ])?;
 
     Ok(())
-
 }
 
-// TODO: return both values instead of just filename
-pub async fn get_raw(
-    filename: &str
-) -> Result<String> {
+pub async fn get_raw(match_id: i32) -> Result<Vec<serde_json::Value>> {
+    let db = utility::query::db().await?;
+
+    let mut query = db.prepare("SELECT data FROM stats_raw WHERE match_id = ?")?;
+    let rows = query.query_map(params![match_id], |row| {
+
+        let data: String = row.get(0)?;
+        let json_value = serde_json::from_str(&data).unwrap_or_default(); // Deserialize JSON
+
+        Ok(json_value)
+    })?;
+
+    let result: Vec<serde_json::Value> = rows.filter_map(Result::ok).collect();
+
+    Ok(result)
+}
+
+pub async fn get_raw_from_filename(filename: &str) -> Result<Option<(String, String, Option<serde_json::Value>)>> {
 
     let db = utility::query::db().await?;
 
-    let mut query = db.prepare("
-        SELECT filename, data FROM stats_raw WHERE filename = ?"
-    )?;
+    let result = db.query_row(
+        "SELECT filename, ballchasing_id, data FROM stats_raw WHERE filename = ?",
+        params![filename],
+        |row| {
+            let filename: String = row.get(0)?;
+            let ballchasing_id: String = row.get(1)?;
 
-    query.query_row(params![filename], |row| row.get(0))
+            // Attempt to parse `data` as JSON if it's not NULL
+            let data: Option<String> = row.get(2)?;
+            let data_json = data
+                .map(|json_str| serde_json::from_str(&json_str).ok()) // Convert JSON string to Value if possible
+                .flatten(); // Handle the case where parsing fails
+
+            Ok((filename, ballchasing_id, data_json))
+        }
+    );
+
+    // Handle the result to return either the data or None if no rows are found
+    match result {
+        Ok(row) => Ok(Some(row)),
+        Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None), // Return None if no row exists
+        Err(e) => Err(e), // Propagate any other errors
+    }
 }
 
 pub async fn insert(
     player_id: u64,
     match_id: i32,
     game_num: i32,
-    ballchasing_id: &str,
     stats: &serde_json::Value
 ) -> Result<()> {
     let query = "
-        INSERT OR REPLACE INTO player_stats (
-            player_id, match_id, game_num, ballchasing_id,
+        INSERT OR REPLACE INTO stats (
+            player_id, match_id, game_num,
             shots, shots_against, goals, goals_against, saves, assists, score, mvp,
             shooting_percentage, bpm, bcpm, avg_amount, amount_collected, amount_stolen, amount_collected_big,
             amount_stolen_big, amount_collected_small, amount_stolen_small, count_collected_big, count_stolen_big,
@@ -174,10 +206,14 @@ pub async fn insert(
             avg_distance_to_mates, time_defensive_third, time_neutral_third, time_offensive_third,
             time_defensive_half, time_offensive_half, time_behind_ball, time_infront_ball, time_most_back,
             time_most_forward, time_closest_to_ball, time_farthest_from_ball, percent_defensive_third,
-            percent_offensive_third, percent_neutral_thistmtrd, percent_defensive_half, percent_offensive_half,
+            percent_offensive_third, percent_neutral_third, percent_defensive_half, percent_offensive_half,
             percent_behind_ball, percent_infront_ball, percent_most_back, percent_most_forward, percent_closest_to_ball,
             percent_farthest_from_ball, demos_inflicted, demos_taken
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                  ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                  ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                  ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                  ?, ?, ?, ?, ?, ?);
     ";
 
     let db = utility::query::db().await?;
@@ -187,7 +223,7 @@ pub async fn insert(
 
     // Bind the values
     statement.execute(params![
-        player_id, match_id, game_num, ballchasing_id,
+        player_id, match_id, game_num,
         stats["core"]["shots"].as_i64().unwrap_or(0),
         stats["core"]["shots_against"].as_i64().unwrap_or(0),
         stats["core"]["goals"].as_i64().unwrap_or(0),

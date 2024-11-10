@@ -44,6 +44,21 @@ pub async fn has_name(username: &str)->Result<bool>{
     Ok(count > 0)
 }
 
+pub async fn get_id(username: &str) -> Result<u64>{
+
+    let db = utility::query::db().await?;
+
+    let mut query = db.prepare(
+        "SELECT player_id
+            FROM players
+            JOIN json_each(players.usernames) AS username
+            WHERE username.value = ?"
+    )?;
+
+    query.query_row(params![username], |row| row.get(0) )
+}
+
+
 pub async fn has_id(player_id: u64)->Result<bool>{
     let db = utility::query::db().await?;
 
@@ -58,7 +73,7 @@ pub async fn has_id(player_id: u64)->Result<bool>{
     Ok(count > 0)
 }
 
-pub async fn register(player_id: u64, username: &str)->Result<(bool)>{
+pub async fn register(player_id: u64, username: &str)->Result<bool>{
     if (has_name(username)).await?{
         return Ok(false);
     }
@@ -72,6 +87,7 @@ pub async fn register(player_id: u64, username: &str)->Result<(bool)>{
                 INSERT INTO players (player_id, usernames) VALUES (?, ?)
             ")?;
         query.execute(params![player_id, usernames_json])?;
+        println!("New User Created: {} ({})", player_id, username);
 
         Ok(true)
     } else {
@@ -81,6 +97,7 @@ pub async fn register(player_id: u64, username: &str)->Result<(bool)>{
                 WHERE player_id = ?
             ")?;
         query.execute(params![username, player_id])?;
+        println!("Username Added: {} ({})", player_id, username);
 
         Ok(true)
     }

@@ -19,6 +19,19 @@ pub async fn init() -> Result<()> {
     Ok(())
 }
 
+pub async fn get_team(player_id: u64) -> Result<u64> {
+
+    let db = utility::query::db().await?;
+
+    let mut query = db.prepare(
+        "SELECT team_id
+            FROM teams
+            WHERE player1_id = ? OR player2_id = ? OR player3_id = ?;"
+    )?;
+
+    query.query_row(params![player_id, player_id, player_id], |row| row.get(0) )
+}
+
 pub async fn add(team_id: u64, player_id: u64) -> Result<bool> {
 
     let db = utility::query::db().await?;

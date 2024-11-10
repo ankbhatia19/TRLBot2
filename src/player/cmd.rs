@@ -27,7 +27,11 @@ pub async fn register(
     #[description = "Player to Register"] player: Option<serenity::User>
 ) -> Result<(), Error> {
 
+    println!("Calling register");
+
     let p = player.as_ref().unwrap_or(ctx.author());
+
+    println!("Registering {} to {}", username, p.name);
 
     if player::query::register(p.id.get(), &username).await? {
         ctx.send(player::response::ok_register(ctx, &username, p.id.get()).await).await?;
