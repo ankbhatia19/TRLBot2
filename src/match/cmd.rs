@@ -5,7 +5,6 @@ use tokio::fs::{self, File};
 use tokio::io::AsyncWriteExt;
 use std::path::Path;
 use poise::futures_util::future::join_all;
-use poise::serenity_prelude::{collect, Mentionable, UserId};
 use crate::{player, r#match, stats, utility, team, Context, Error};
 
 /// TODO: Description
@@ -41,7 +40,6 @@ pub async fn submit(
     let attachments: Vec<_> = attachments.into_iter().filter_map(|x| x).collect();
 
     let group_id = r#match::query::get_ballchasing_id(match_id).await?;
-
 
     // Map each attachment to an asynchronous task to download and save it
     let ballchasing_tasks = attachments.iter().enumerate().map(|(i, attachment)| {
@@ -161,17 +159,11 @@ pub async fn submit(
     }
 
     if !unregistered.is_empty() {
-        ctx.reply(format!("The following players are unregistered: {:?}", unregistered)).await?;
+        r#match::response::err_submit_missing_usernames(ctx, match_id, unregistered).await?;
     } else if !teamless.is_empty() {
-        ctx.reply(format!("The following players are not on either team: {:?}", teamless)).await?;
+        r#match::response::err_submit_missing_team(ctx, match_id, teamless).await?;
     } else {
-
-        let scores = r#match::query::tally(match_id).await?;
-
-        for score in scores {
-            ctx.reply(format!("Game {}: {} - {}", score.0, score.1, score.2)).await?;
-        }
-
+        r#match::response::ok_submit(ctx, match_id).await?;
     }
 
     Ok(())
@@ -201,9 +193,7 @@ pub async fn create(
         None => {  }
     }
 
-    // TODO: Embed for succesful match id creation
-    ctx.reply(format!("Created match {}", match_id)).await?;
-
+    r#match::response::ok_create(ctx, match_id).await?;
     Ok(())
 }
 
@@ -214,4 +204,43 @@ pub async fn info(
     #[description = "TODO: Description"] match_id: i32
 ) -> Result<(), Error> {
     unimplemented!()
+}
+
+// This proof-of-concept exists just in case Discord ever adds file uploads to modals
+#[poise::command(slash_command)]
+pub async fn modalsubmit(ctx: Context<'_>) -> Result<(), Error> {
+
+    match ctx {
+        Context::Application(atx) => {
+
+            let interaction = atx.interaction;
+
+            let modal = serenity::CreateQuickModal::new("About you")
+                .timeout(std::time::Duration::from_secs(600))
+                .short_field("First name")
+                .short_field("Last name")
+                .paragraph_field("Hobbies and interests");
+
+
+            let response = interaction.quick_modal(atx.serenity_context, modal).await?.unwrap();
+            let inputs = response.inputs;
+            let (first_name, last_name, hobbies) = (&inputs[0], &inputs[1], &inputs[2]);
+
+            response.interaction.create_response(
+                &ctx.serenity_context(),
+                serenity::CreateInteractionResponse::Acknowledge
+            ).await?;
+
+
+            interaction.create_followup(
+                &ctx.serenity_context(),
+                serenity::CreateInteractionResponseFollowup::default()
+                    .content(format!("Thank you for your response, {} {}", first_name, last_name))
+            ).await?;
+
+        }
+        Context::Prefix(_) => {}
+    }
+
+    Ok(())
 }

@@ -32,6 +32,29 @@ pub async fn get_team(player_id: u64) -> Result<u64> {
     query.query_row(params![player_id, player_id, player_id], |row| row.get(0) )
 }
 
+pub async fn get_players(team_id: u64) -> Result<Vec<u64>> {
+    let db = utility::query::db().await?;
+
+    let mut players: Vec<u64> = vec![];
+
+    db.query_row(
+        "SELECT player1_id, player2_id, player3_id FROM teams WHERE team_id = ?",
+        params![team_id],
+        |row| {
+            let player1_id: u64 = row.get(0).unwrap_or_default();
+            let player2_id: u64 = row.get(1).unwrap_or_default();
+            let player3_id: u64 = row.get(2).unwrap_or_default();
+
+            if player1_id != 0 { players.push(player1_id); }
+            if player2_id != 0 { players.push(player2_id); }
+            if player3_id != 0 { players.push(player3_id); }
+
+            Ok(players)
+        }
+    )
+
+}
+
 pub async fn add(team_id: u64, player_id: u64) -> Result<bool> {
 
     let db = utility::query::db().await?;

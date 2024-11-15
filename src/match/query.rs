@@ -132,3 +132,51 @@ pub async fn tally(match_id: i32) -> Result<Vec<(i32, i32, i32)>> {
 
     Ok(game_scores)
 }
+
+pub async fn score(match_id: i32) -> Result<(u64, u64, i32, i32)> {
+
+    let db = utility::query::db().await?;
+
+    db.query_row(
+        "
+        WITH game_results AS (
+            SELECT
+                s.game_num,
+                team1.team_id AS team1_id,
+                team2.team_id AS team2_id,
+                COALESCE(SUM(CASE WHEN s.player_id IN (team1.player1_id, team1.player2_id, team1.player3_id) THEN s.goals END), 0) AS team1_goals,
+                COALESCE(SUM(CASE WHEN s.player_id IN (team2.player1_id, team2.player2_id, team2.player3_id) THEN s.goals END), 0) AS team2_goals
+            FROM
+                stats as s
+            JOIN
+                matches AS m ON s.match_id = m.match_id
+            JOIN
+                teams AS team1 ON m.team1_id = team1.team_id
+            JOIN
+                teams AS team2 ON m.team2_id = team2.team_id
+            WHERE
+                s.match_id = ?
+            GROUP BY
+                s.game_num
+        )
+        SELECT
+            team1_id,
+            team2_id,
+            SUM(CASE WHEN team1_goals > team2_goals THEN 1 ELSE 0 END) AS team1_score,
+            SUM(CASE WHEN team2_goals > team1_goals THEN 1 ELSE 0 END) AS team2_score
+        FROM
+            game_results
+        WHERE
+            team1_goals IS NOT NULL OR team2_goals IS NOT NULL;",
+        params![match_id],
+        |row| {
+            Ok ((
+                row.get(0)?,
+                row.get(1)?,
+                row.get(2)?,
+                row.get(3)?,
+            ))
+        }
+    )
+
+}

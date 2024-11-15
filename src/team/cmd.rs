@@ -28,12 +28,16 @@ pub async fn add(
         _ => {}
     }
 
-    // TODO: Add embeds for success and failure
-    for (i, player) in players.iter().enumerate() {
-        if team::query::add(team.id.get(), player.id.get()).await? {
-            ctx.reply(format!("Added {} to team {}", player.name, team.name)).await?;
+    for player in players {
+
+        let current_team = team::query::get_team(player.id.get()).await.unwrap_or_default();
+
+        if current_team != 0 {
+            team::response::err_add_already_on_team(ctx, current_team, player.id.get()).await?;
+        } else if team::query::add(team.id.get(), player.id.get()).await? {
+            team::response::ok_add(ctx, team.id.get(), player.id.get()).await?;
         } else {
-            ctx.reply(format!("Failed to add {} to team {}", player.name, team.name)).await?;
+            team::response::err_add(ctx, team.id.get(), player.id.get()).await?;
         }
     }
 

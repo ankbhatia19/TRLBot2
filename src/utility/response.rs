@@ -1,9 +1,13 @@
 use poise::serenity_prelude as serenity;
+use poise::serenity_prelude::CreateEmbedFooter;
 
 pub fn base() -> serenity::CreateEmbed {
     serenity::CreateEmbed::default()
         .color(serenity::Color::from_rgb(15, 15, 150))
         .thumbnail("https://raw.githubusercontent.com/ankbhatia19/TRLBot/master/assets/TRL_logo_topright_noBG.png")
+        .footer(
+            CreateEmbedFooter::new("\"This is a sample quote.\" - Waycey")
+        )
 }
 
 pub fn wip() -> poise::reply::CreateReply {
