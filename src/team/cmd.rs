@@ -50,7 +50,15 @@ pub async fn info(
     ctx: Context<'_>,
     #[description = "TODO: Description"] team: serenity::Role
 ) -> Result<(), Error>{
-    unimplemented!()
+
+    if !team::query::has_id(team.id.get()).await? {
+        ctx.reply("Team does not exist").await?;
+    } else {
+        team::response::info(ctx, team.id.get()).await?;
+    }
+
+    Ok(())
+
 }
 
 /// TODO: Description
@@ -59,5 +67,15 @@ pub async fn remove(
     ctx: Context<'_>,
     #[description = "TODO: Description"] player: serenity::User
 ) -> Result<(), Error>{
-    unimplemented!()
+
+    let current_team = team::query::get_team(player.id.get()).await.unwrap_or_default();
+
+    if current_team == 0 {
+        team::response::err_remove(ctx, player.id.get()).await?;
+    } else {
+        team::query::remove(player.id.get()).await?;
+        team::response::ok_remove(ctx, current_team, player.id.get()).await?;
+    }
+
+    Ok(())
 }

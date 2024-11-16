@@ -38,10 +38,10 @@ async fn main() {
                     &framework.options().commands
                 );
 
-                // serenity::Command::set_global_comman ds(ctx, create_commands).await?;
-                serenity::GuildId::new(483325630692327434)
-                    .set_commands(ctx, create_commands)
-                    .await?;
+                serenity::Command::set_global_commands(ctx, create_commands).await?;
+                // serenity::GuildId::new(483325630692327434)
+                //     .set_commands(ctx, create_commands)
+                //     .await?;
 
                 Ok(Data {})
             })

@@ -87,7 +87,7 @@ pub async fn ok_remove(ctx: Context<'_>, username: &str, player_id: u64) -> Resu
                     )
             )
     ).await?;
-    
+
     Ok(())
 
 }
@@ -136,7 +136,7 @@ async fn info_base(ctx: Context<'_>, player_id: u64) -> Result<CreateEmbed, Erro
                 mention_str,
                 true
             )
-            // .thumbnail(user.face())
+            .thumbnail(user.face())
 
     )
 }
@@ -254,10 +254,10 @@ pub async fn info(ctx: Context<'_>, player_id: u64) -> Result<(), Error> {
         .embed(info_core(ctx, player_id).await?)
         .components(vec![CreateActionRow::Buttons(
             vec![
-                CreateButton::new("stats_core").label("Core"),
-                CreateButton::new("stats_boost").label("Boost"),
-                CreateButton::new("stats_positioning").label("Positioning"),
-                CreateButton::new("stats_demos").label("Demos"),
+                CreateButton::new("player_stats_core").label("Core"),
+                CreateButton::new("player_stats_boost").label("Boost"),
+                CreateButton::new("player_stats_positioning").label("Positioning"),
+                CreateButton::new("player_stats_demos").label("Demos"),
             ])
         ]);
 
@@ -276,7 +276,7 @@ pub async fn info(ctx: Context<'_>, player_id: u64) -> Result<(), Error> {
     while let Some (interaction) = interaction_stream.next().await {
 
         match interaction.data.custom_id.as_str() {
-            "stats_core" => {
+            "player_stats_core" => {
                 interaction.create_response(
                     &ctx.serenity_context(),
                     CreateInteractionResponse::UpdateMessage(
@@ -285,7 +285,7 @@ pub async fn info(ctx: Context<'_>, player_id: u64) -> Result<(), Error> {
                     )
                 ).await?;
             }
-            "stats_demos" => {
+            "player_stats_demos" => {
                 interaction.create_response(
                     &ctx.serenity_context(),
                     CreateInteractionResponse::UpdateMessage(
@@ -294,7 +294,7 @@ pub async fn info(ctx: Context<'_>, player_id: u64) -> Result<(), Error> {
                     )
                 ).await?;
             }
-            "stats_boost" => {
+            "player_stats_boost" => {
                 interaction.create_response(
                     &ctx.serenity_context(),
                     CreateInteractionResponse::UpdateMessage(
@@ -303,7 +303,7 @@ pub async fn info(ctx: Context<'_>, player_id: u64) -> Result<(), Error> {
                     )
                 ).await?;
             }
-            "stats_positioning" => {
+            "player_stats_positioning" => {
                 interaction.create_response(
                     &ctx.serenity_context(),
                     CreateInteractionResponse::UpdateMessage(

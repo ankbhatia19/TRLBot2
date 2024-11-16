@@ -32,6 +32,20 @@ pub async fn get_team(player_id: u64) -> Result<u64> {
     query.query_row(params![player_id, player_id, player_id], |row| row.get(0) )
 }
 
+pub async fn has_id(team_id: u64) -> Result<bool> {
+
+    let db = utility::query::db().await?;
+
+    db.query_row(
+        "SELECT COUNT(*) FROM teams WHERE team_id = ?",
+        params![team_id],
+        |row| {
+            let count: i32 = row.get(0)?;
+            if count > 0 { Ok(true) } else { Ok(false) }
+        }
+    )
+}
+
 pub async fn get_players(team_id: u64) -> Result<Vec<u64>> {
     let db = utility::query::db().await?;
 
@@ -99,4 +113,22 @@ pub async fn add(team_id: u64, player_id: u64) -> Result<bool> {
         // For any other error, return it
         Err(e) => Err(e)
     }
+}
+
+pub async fn remove(player_id: u64) -> Result<()> {
+    let db = utility::query::db().await?;
+
+    db.execute(
+        "
+        UPDATE teams
+        SET
+            player1_id = CASE WHEN player1_id = ? THEN 0 ELSE player1_id END,
+            player2_id = CASE WHEN player2_id = ? THEN 0 ELSE player2_id END,
+            player3_id = CASE WHEN player3_id = ? THEN 0 ELSE player3_id END
+        WHERE player1_id = ? OR player2_id = ? OR player3_id = ?
+        ",
+    params![player_id, player_id, player_id, player_id, player_id, player_id]
+    )?;
+
+    Ok(())
 }
