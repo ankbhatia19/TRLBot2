@@ -1,6 +1,6 @@
-use rusqlite::{params, Connection, Result};
+use rusqlite::{Connection, Result};
 
 pub async fn db()->Result<Connection>{
-    let conn = Connection::open("trl.sqlite")?;
+    let conn = Connection::open(format!("{}.sqlite", env!("BALLCHASING_GROUP")))?;
     Ok(conn)
 }

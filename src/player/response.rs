@@ -42,7 +42,7 @@ pub async fn err_register(ctx: Context<'_>, username: &str, player_id: u64) -> p
 
     let registered_to = player::query::get_id(username).await.unwrap_or_default();
 
-    let mut registered_to_str: String;
+    let registered_to_str: String;
 
     if registered_to != 0 {
         registered_to_str = UserId::new(registered_to).mention().to_string();

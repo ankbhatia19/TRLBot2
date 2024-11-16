@@ -1,7 +1,5 @@
 use poise::serenity_prelude as serenity;
-use poise::serenity_prelude::{Mentionable};
 use crate::{r#match, stats, team, utility, Context, Error};
-use crate::player::cmd::player;
 
 /// TODO: Description
 #[poise::command(slash_command, subcommands("add", "remove", "info"))]
@@ -52,13 +50,12 @@ pub async fn info(
 ) -> Result<(), Error>{
 
     if !team::query::has_id(team.id.get()).await? {
-        ctx.reply("Team does not exist").await?;
+        team::response::err_info(ctx).await?;
     } else {
         team::response::info(ctx, team.id.get()).await?;
     }
 
     Ok(())
-
 }
 
 /// TODO: Description

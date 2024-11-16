@@ -395,3 +395,23 @@ pub async fn info(ctx: Context<'_>, team_id: u64) -> Result<(), Error> {
 
     Ok(())
 }
+
+pub async fn err_info(ctx: Context<'_>) -> Result<(), Error> {
+
+    ctx.send(
+        poise::reply::CreateReply::default()
+            .reply(true)
+            .embed(
+                utility::response::base()
+                    .title("Error")
+                    .field(
+                        "Team Not Registered",
+                        "Please add at least one player to this team.",
+                        false
+                    )
+            )
+    ).await?;
+
+    Ok(())
+
+}
