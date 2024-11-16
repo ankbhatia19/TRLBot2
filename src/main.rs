@@ -19,7 +19,9 @@ async fn main() {
     r#match::query::init().await.unwrap();
     team::query::init().await.unwrap();
 
-    let token = env!("DISCORD_TOKEN");
+    println!("Launching TRLBot2...");
+
+    let token = std::env::var("DISCORD_TOKEN").expect("Discord Token is required");
     let intents = serenity::GatewayIntents::non_privileged();
 
     let framework = poise::Framework::builder()
@@ -52,5 +54,6 @@ async fn main() {
         .framework(framework)
         .await;
 
+    println!("TRLBot2 launched successfully.");
     client.unwrap().start().await.unwrap();
 }

@@ -7,9 +7,6 @@ use tokio::sync::Semaphore;
 use tokio::time::{sleep, Instant};
 use once_cell::sync::Lazy;
 
-static TOKEN: &str = env!("BALLCHASING_TOKEN");
-static GROUP_ID: &str = env!("BALLCHASING_GROUP");
-
 // Initialize the HTTP client once and make it globally accessible
 static CLIENT: Lazy<Client> = Lazy::new(|| {
     Client::builder()
@@ -33,7 +30,8 @@ async fn rate_limited() {
 // Function to upload a replay file
 pub async fn upload(path: &str, replay_name: &str) -> Result<Value, reqwest::Error> {
     rate_limited().await;
-
+    let TOKEN: String = std::env::var("BALLCHASING_TOKEN")
+        .expect("Ballchasing Token is required.");
     let file_content = fs::read(path).expect("Failed to read file");
 
     let form = multipart::Form::new()
@@ -43,7 +41,7 @@ pub async fn upload(path: &str, replay_name: &str) -> Result<Value, reqwest::Err
         );
 
     let mut headers = HeaderMap::new();
-    headers.insert(AUTHORIZATION, HeaderValue::from_str(TOKEN).unwrap());
+    headers.insert(AUTHORIZATION, HeaderValue::from_str(&TOKEN).unwrap());
 
     let response = CLIENT
         .post("https://ballchasing.com/api/v2/upload?visibility=public")
@@ -59,6 +57,12 @@ pub async fn upload(path: &str, replay_name: &str) -> Result<Value, reqwest::Err
 pub async fn create(match_id: i32) -> Result<Value, reqwest::Error> {
     rate_limited().await;
 
+    let TOKEN: String = std::env::var("BALLCHASING_TOKEN")
+        .expect("Ballchasing Token is required.");
+
+    let GROUP_ID:String = std::env::var("BALLCHASING_GROUP")
+        .expect("Ballchasing Group is required.");
+
     let post_body = json!({
         "name": match_id.to_string(),
         "parent": GROUP_ID,
@@ -67,7 +71,7 @@ pub async fn create(match_id: i32) -> Result<Value, reqwest::Error> {
     });
 
     let mut headers = HeaderMap::new();
-    headers.insert(AUTHORIZATION, HeaderValue::from_str(TOKEN).unwrap());
+    headers.insert(AUTHORIZATION, HeaderValue::from_str(&TOKEN).unwrap());
 
     let response = CLIENT
         .post("https://ballchasing.com/api/groups")
@@ -83,13 +87,16 @@ pub async fn create(match_id: i32) -> Result<Value, reqwest::Error> {
 pub async fn group(replay_name: &str, group: &str, ballchasing_id: &str) -> Result<(), reqwest::Error> {
     rate_limited().await;
 
+    let TOKEN: String = std::env::var("BALLCHASING_TOKEN")
+        .expect("Ballchasing Token is required.");
+
     let patch_body = json!({
         "title": replay_name,
         "group": group
     });
 
     let mut headers = HeaderMap::new();
-    headers.insert(AUTHORIZATION, HeaderValue::from_str(TOKEN).unwrap());
+    headers.insert(AUTHORIZATION, HeaderValue::from_str(&TOKEN).unwrap());
 
     CLIENT
         .patch(&format!("https://ballchasing.com/api/replays/{}", ballchasing_id))
@@ -105,11 +112,14 @@ pub async fn group(replay_name: &str, group: &str, ballchasing_id: &str) -> Resu
 pub async fn pull(ballchasing_id: &str) -> Result<Value, reqwest::Error> {
     let get_endpoint = format!("https://ballchasing.com/api/replays/{}", ballchasing_id);
 
+    let TOKEN: String = std::env::var("BALLCHASING_TOKEN")
+        .expect("Ballchasing Token is required.");
+
     loop {
         rate_limited().await;
 
         let mut headers = HeaderMap::new();
-        headers.insert(AUTHORIZATION, HeaderValue::from_str(TOKEN).unwrap());
+        headers.insert(AUTHORIZATION, HeaderValue::from_str(&TOKEN).unwrap());
 
         let response: Response = CLIENT
             .get(&get_endpoint)

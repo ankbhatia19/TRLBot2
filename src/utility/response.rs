@@ -29,7 +29,7 @@ pub fn base() -> serenity::CreateEmbed {
         .thumbnail("https://raw.githubusercontent.com/ankbhatia19/TRLBot/master/assets/TRL_logo_topright_noBG.png")
         .footer(
             CreateEmbedFooter::new(
-                quote().unwrap_or("\"This is a sample quote.\" - Waycey".to_string())
+                quote().unwrap_or("\"The quotes file is not loaded.\" - TRLBot".to_string())
             )
         )
 }

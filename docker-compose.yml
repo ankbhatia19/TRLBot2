@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  trlbot2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      DISCORD_TOKEN: ${DISCORD_TOKEN}
+      BALLCHASING_TOKEN: ${BALLCHASING_TOKEN}
+      BALLCHASING_GROUP: ${BALLCHASING_GROUP}
+      REPORT_CHANNEL: ${REPORT_CHANNEL}
+    volumes:
+      - ./${BALLCHASING_GROUP}.sqlite:/app/${BALLCHASING_GROUP}.sqlite
+      - ./quotes.json:/app/quotes.json
+    working_dir: /app
+    restart: unless-stopped
