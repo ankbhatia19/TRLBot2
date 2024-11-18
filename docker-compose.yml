@@ -5,6 +5,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    image: ghcr.io/ankbhatia19/trlbot2:latest
     environment:
       DISCORD_TOKEN: ${DISCORD_TOKEN}
       BALLCHASING_TOKEN: ${BALLCHASING_TOKEN}

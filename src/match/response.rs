@@ -1,4 +1,5 @@
-use poise::serenity_prelude::{Mentionable, RoleId, UserId};
+use std::fmt::format;
+use poise::serenity_prelude::{ChannelId, Mentionable, RoleId, UserId};
 use crate::{player, r#match, team, utility, Context, Error};
 
 pub async fn ok_create(ctx: Context<'_>, match_id: i32) -> Result<(), Error> {
@@ -126,11 +127,57 @@ pub async fn ok_submit(ctx: Context<'_>, match_id: i32) -> Result<(), Error> {
     ctx.send(
         poise::reply::CreateReply::default()
             .reply(true)
-            .embed(embed)
+            .embed(embed.clone())
     ).await?;
+
+    ChannelId::new(
+        std::env::var("REPORT_CHANNEL")
+            .expect("REPORT_CHANNEL must be set")
+            .parse()
+            .unwrap()
+    ).send_message(
+        ctx.http(),
+        poise::serenity_prelude::CreateMessage::default()
+            .embed(embed)
+        ).await?;
 
     Ok(())
 
+}
+
+pub async fn ok_submit_processing(ctx: Context<'_>, match_id: i32) -> Result<(), Error> {
+
+    ctx.send(
+        poise::reply::CreateReply::default()
+            .embed(
+                utility::response::base()
+                    .title(format!("Submitting Match${}...", match_id))
+                    .field(
+                        "If this command takes longer than 5 minutes, poke Waycey.",
+                        "_ _",
+                        false
+                    )
+            )
+    ).await?;
+
+    Ok(())
+}
+
+pub async fn err_submit_no_matchid(ctx: Context<'_>, match_id: i32) -> Result<(), Error> {
+    ctx.send(
+        poise::reply::CreateReply::default()
+            .embed(
+                utility::response::base()
+                    .title("Error Submitting")
+                    .field(
+                        format!("Match ${} does not exist.", match_id),
+                        "Use `/match create` to create a new match,",
+                        false
+                    )
+            )
+    ).await?;
+
+    Ok(())
 }
 
 pub async fn err_submit_missing_usernames(ctx: Context<'_>, match_id: i32, missing: Vec<&str>) -> Result<(), Error> {
@@ -171,7 +218,7 @@ pub async fn err_submit_missing_team(ctx: Context<'_>, match_id: i32, missing: V
     let embed = utility::response::base()
         .title(format!("Error Processing Match #{}", match_id))
         .field(
-            "Missing Team",
+            "These players are not registered to either team:",
             mentions,
             false
         );

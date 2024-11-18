@@ -7,26 +7,30 @@ use std::path::Path;
 use poise::futures_util::future::join_all;
 use crate::{player, r#match, stats, utility, team, Context, Error};
 
-/// TODO: Description
-#[poise::command(slash_command, subcommands("create", "submit", "info"))]
+/// Collection of all match commands
+#[poise::command(slash_command, subcommands("create", "submit", "info", "remove"))]
 pub async fn r#match(ctx: Context<'_>) -> Result<(), Error> { Ok(()) }
 
-/// TODO: Description
+/// Submit a match given a match ID.
 #[poise::command(slash_command)]
 pub async fn submit(
     ctx: Context<'_>,
-    #[description = "TODO: Description"] match_id: i32,
-    #[description = "TODO: Description"] game_1: Option<serenity::Attachment>,
-    #[description = "TODO: Description"] game_2: Option<serenity::Attachment>,
-    #[description = "TODO: Description"] game_3: Option<serenity::Attachment>,
-    #[description = "TODO: Description"] game_4: Option<serenity::Attachment>,
-    #[description = "TODO: Description"] game_5: Option<serenity::Attachment>,
-    #[description = "TODO: Description"] game_6: Option<serenity::Attachment>,
-    #[description = "TODO: Description"] game_7: Option<serenity::Attachment>
+    #[description = "The match ID to submit"] match_id: i32,
+    #[description = "Replay file"] game_1: Option<serenity::Attachment>,
+    #[description = "Replay file"] game_2: Option<serenity::Attachment>,
+    #[description = "Replay file"] game_3: Option<serenity::Attachment>,
+    #[description = "Replay file"] game_4: Option<serenity::Attachment>,
+    #[description = "Replay file"] game_5: Option<serenity::Attachment>,
+    #[description = "Replay file"] game_6: Option<serenity::Attachment>,
+    #[description = "Replay file"] game_7: Option<serenity::Attachment>
 ) -> Result<(), Error> {
 
-    // TODO: Send 'In Progress' embed
-    ctx.reply(format!("Submitting Match #{}", match_id)).await?;
+    if !r#match::query::has_id(match_id).await? {
+        r#match::response::err_submit_no_matchid(ctx, match_id).await?;
+        return Ok(());
+    }
+
+    r#match::response::ok_submit_processing(ctx, match_id).await?;
 
     let save_dir = format!("Replays/{}", match_id);
 
@@ -169,12 +173,12 @@ pub async fn submit(
     Ok(())
 }
 
-/// TODO: Description
+/// Create a new match ID for submission
 #[poise::command(slash_command)]
 pub async fn create(
     ctx: Context<'_>,
-    #[description = "TODO: Description"] team_1: serenity::Role,
-    #[description = "TODO: Description"] team_2: serenity::Role
+    #[description = "Team 1"] team_1: serenity::Role,
+    #[description = "Team 2"] team_2: serenity::Role
 ) -> Result<(), Error> {
 
     let team1_id = team_1.id.get();
@@ -190,20 +194,52 @@ pub async fn create(
         Some(ballchasing_id) => {
             r#match::query::set_ballchasing_id(match_id, ballchasing_id).await?;
         },
-        None => {  }
+        None => { println!("Ballchasing did not return a group ID."); }
     }
 
     r#match::response::ok_create(ctx, match_id).await?;
     Ok(())
 }
 
-/// TODO: Description
+/// View the information of a match, including scheduling details.
 #[poise::command(slash_command)]
 pub async fn info(
     ctx: Context<'_>,
-    #[description = "TODO: Description"] match_id: i32
+    #[description = "The match ID to view"] match_id: i32
 ) -> Result<(), Error> {
-    unimplemented!()
+
+    ctx.send(utility::response::wip()).await?;
+    Ok(())
+}
+
+
+/// Remove a match. Also removes the match from the ballchasing group.
+#[poise::command(slash_command)]
+pub async fn remove(
+    ctx: Context<'_>,
+    #[description = "The match ID to remove"] match_id: i32
+) -> Result<(), Error> {
+
+    if !r#match::query::has_id(match_id).await? {
+        ctx.reply("Match does not exist.").await?;
+    } else {
+        ctx.reply("Removing match...").await?;
+        let ids = stats::query::get_ballchasing_ids(match_id).await?;
+
+        for id in ids {
+            utility::ballchasing::ungroup(&id).await?;
+        }
+
+        let group_id = r#match::query::get_ballchasing_id(match_id).await?;
+        utility::ballchasing::delete_group(&group_id).await?;
+
+        r#match::query::remove(match_id).await?;
+        stats::query::remove(match_id).await?;
+
+        ctx.reply("Removed").await?;
+    }
+
+    Ok(())
 }
 
 // This proof-of-concept exists just in case Discord ever adds file uploads to modals

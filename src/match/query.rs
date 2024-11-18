@@ -57,6 +57,17 @@ pub async fn create(team1_id: u64, team2_id: u64) -> Result<i32> {
     Ok(num)
 }
 
+pub async fn remove(match_id: i32) -> Result<()> {
+    let db = utility::query::db().await?;
+
+    db.execute(
+        "DELETE FROM matches WHERE match_id = ?",
+        params![match_id],
+    )?;
+
+    Ok(())
+}
+
 pub async fn set_ballchasing_id(match_id: i32, ballchasing_id: &str) -> Result<()> {
 
     let db = utility::query::db().await?;

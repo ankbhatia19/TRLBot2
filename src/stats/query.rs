@@ -313,3 +313,62 @@ pub async fn insert(
 
     Ok(())
 }
+
+pub async fn has_id_raw(match_id: i32) -> Result<bool> {
+    let db = utility::query::db().await?;
+
+    let count: i32 = db.query_row(
+        "SELECT COUNT(*) FROM stats_raw WHERE match_id = ?",
+        params![match_id],
+        |row| {
+            row.get(0)
+        }
+    )?;
+
+    Ok(count > 0)
+}
+
+pub async fn has_id(match_id: i32) -> Result<bool> {
+    let db = utility::query::db().await?;
+
+    let count: i32 = db.query_row(
+        "SELECT COUNT(*) FROM stats WHERE match_id = ?",
+        params![match_id],
+        |row| {
+            row.get(0)
+        }
+    )?;
+
+    Ok(count > 0)
+}
+
+pub async fn get_ballchasing_ids(match_id: i32) -> Result<Vec<String>> {
+    let db = utility::query::db().await?;
+
+    let mut query = db.prepare("SELECT ballchasing_id FROM stats_raw WHERE match_id = ?")?;
+
+    let ballchasing_ids: Vec<String> = query.query_map(params![match_id], |row| {
+        row.get(0) // Getting the first column (ballchasing_id)
+    })?
+        .collect::<Result<Vec<String>, _>>()?;
+
+    Ok(ballchasing_ids)
+}
+
+pub async fn remove(match_id: i32) -> Result<()> {
+
+    let db = utility::query::db().await?;
+
+    db.execute(
+        "DELETE FROM stats WHERE match_id = ?",
+        params![match_id],
+    )?;
+
+    db.execute(
+        "DELETE FROM stats_raw WHERE match_id = ?",
+        params![match_id],
+    )?;
+
+    Ok(())
+
+}

@@ -145,6 +145,11 @@ async fn info_core(ctx: Context<'_>, player_id: u64) -> Result<CreateEmbed, Erro
     let stats = player::query::stats_core(player_id).await.unwrap_or_default();
     let names = player::query::get_names(player_id).await.unwrap_or(vec!["None".to_string()]);
 
+    let names_str = names.iter()
+        .map(|name| format!("`{}`", name))
+        .collect::<Vec<String>>()
+        .join("\n");
+
     let avg_mvpr = 250.0 + (250.0 * (stats.1 + (stats.2 / 3.0) + (stats.3 * 0.75) + (stats.4 * 0.6)));
 
     Ok(
@@ -164,7 +169,7 @@ async fn info_core(ctx: Context<'_>, player_id: u64) -> Result<CreateEmbed, Erro
             )
             .field(
                 "Registered Usernames",
-                format!("{}", names.join("\n")),
+                names_str,
                 false
             )
     )
@@ -174,6 +179,11 @@ async fn info_demos(ctx: Context<'_>, player_id: u64) -> Result<CreateEmbed, Err
 
     let stats = player::query::stats_demos(player_id).await.unwrap_or_default();
     let names = player::query::get_names(player_id).await.unwrap_or(vec!["None".to_string()]);
+
+    let names_str = names.iter()
+        .map(|name| format!("`{}`", name))
+        .collect::<Vec<String>>()
+        .join("\n");
 
     Ok(
         info_base(ctx, player_id).await?
@@ -189,7 +199,7 @@ async fn info_demos(ctx: Context<'_>, player_id: u64) -> Result<CreateEmbed, Err
             )
             .field(
                 "Registered Usernames",
-                format!("{}", names.join("\n")),
+                names_str,
                 false
             )
     )
@@ -198,6 +208,11 @@ async fn info_demos(ctx: Context<'_>, player_id: u64) -> Result<CreateEmbed, Err
 async fn info_boost(ctx: Context<'_>, player_id: u64) -> Result<CreateEmbed, Error> {
     let stats = player::query::stats_boost(player_id).await.unwrap_or_default();
     let names = player::query::get_names(player_id).await.unwrap_or(vec!["None".to_string()]);
+
+    let names_str = names.iter()
+        .map(|name| format!("`{}`", name))
+        .collect::<Vec<String>>()
+        .join("\n");
 
     Ok(
         info_base(ctx, player_id).await?
@@ -215,7 +230,7 @@ async fn info_boost(ctx: Context<'_>, player_id: u64) -> Result<CreateEmbed, Err
             )
             .field(
                 "Registered Usernames",
-                format!("{}", names.join("\n")),
+                names_str,
                 false
             )
     )
@@ -224,6 +239,11 @@ async fn info_boost(ctx: Context<'_>, player_id: u64) -> Result<CreateEmbed, Err
 async fn info_positioning(ctx: Context<'_>, player_id: u64) -> Result<CreateEmbed, Error> {
     let stats = player::query::stats_positioning(player_id).await.unwrap_or_default();
     let names = player::query::get_names(player_id).await.unwrap_or(vec!["None".to_string()]);
+
+    let names_str = names.iter()
+        .map(|name| format!("`{}`", name))
+        .collect::<Vec<String>>()
+        .join("\n");
 
     Ok(
         info_base(ctx, player_id).await?
@@ -241,7 +261,7 @@ async fn info_positioning(ctx: Context<'_>, player_id: u64) -> Result<CreateEmbe
             )
             .field(
                 "Registered Usernames",
-                format!("{}", names.join("\n")),
+                names_str,
                 false
             )
     )

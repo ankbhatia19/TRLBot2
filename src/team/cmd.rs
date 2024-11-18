@@ -1,18 +1,18 @@
 use poise::serenity_prelude as serenity;
 use crate::{r#match, stats, team, utility, Context, Error};
 
-/// TODO: Description
+/// Group of team commands
 #[poise::command(slash_command, subcommands("add", "remove", "info"))]
 pub async fn team(ctx: Context<'_>) -> Result<(), Error> { Ok(()) }
 
-/// TODO: Description
+/// Add player(s) to a team
 #[poise::command(slash_command)]
 pub async fn add(
     ctx: Context<'_>,
-    #[description = "TODO: Description"] team: serenity::Role,
-    #[description = "TODO: Description"] player1: serenity::User,
-    #[description = "TODO: Description"] player2: Option<serenity::User>,
-    #[description = "TODO: Description"] player3: Option<serenity::User>
+    #[description = "Team to which players should be added"] team: serenity::Role,
+    #[description = "Player to be added"] player1: serenity::User,
+    #[description = "Player to be added"] player2: Option<serenity::User>,
+    #[description = "Player to be added"] player3: Option<serenity::User>
 ) -> Result<(), Error> {
 
     let mut players = vec![player1];
@@ -42,11 +42,11 @@ pub async fn add(
     Ok(())
 }
 
-/// TODO: Description
+/// View the information of a selected team
 #[poise::command(slash_command)]
 pub async fn info(
     ctx: Context<'_>,
-    #[description = "TODO: Description"] team: serenity::Role
+    #[description = "The team to view"] team: serenity::Role
 ) -> Result<(), Error>{
 
     if !team::query::has_id(team.id.get()).await? {
@@ -58,11 +58,11 @@ pub async fn info(
     Ok(())
 }
 
-/// TODO: Description
+/// Remove a player from whichever team they are registered to
 #[poise::command(slash_command)]
 pub async fn remove(
     ctx: Context<'_>,
-    #[description = "TODO: Description"] player: serenity::User
+    #[description = "The player to remove"] player: serenity::User
 ) -> Result<(), Error>{
 
     let current_team = team::query::get_team(player.id.get()).await.unwrap_or_default();
