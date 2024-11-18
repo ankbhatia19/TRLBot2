@@ -66,6 +66,25 @@ pub async fn ok_create(ctx: Context<'_>, match_id: i32) -> Result<(), Error> {
 
 }
 
+pub async fn err_create(ctx: Context<'_>, team_id: u64) -> Result<(), Error> {
+
+    ctx.send(
+        poise::reply::CreateReply::default()
+            .embed(
+                utility::response::base()
+                    .title("Error: Could not create match.")
+                    .field(
+                        "This team does not have any players:",
+                        format!("{}", RoleId::new(team_id).mention()),
+                        false
+                    )
+            )
+    ).await?;
+
+    Ok(())
+
+}
+
 pub async fn ok_submit(ctx: Context<'_>, match_id: i32) -> Result<(), Error> {
 
     let (team1_id, team2_id, team1_score, team2_score) = r#match::query::score(match_id).await?;

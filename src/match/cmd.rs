@@ -181,6 +181,15 @@ pub async fn create(
     #[description = "Team 2"] team_2: serenity::Role
 ) -> Result<(), Error> {
 
+    if !team::query::has_id(team_1.id.get()).await?{
+        r#match::response::err_create(ctx, team_1.id.get()).await?;
+        return Ok(());
+    }
+    if !team::query::has_id(team_2.id.get()).await?{
+        r#match::response::err_create(ctx, team_2.id.get()).await?;
+        return Ok(());
+    }
+
     let team1_id = team_1.id.get();
     let team2_id = team_2.id.get();
 
