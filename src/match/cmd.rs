@@ -230,9 +230,9 @@ pub async fn remove(
 ) -> Result<(), Error> {
 
     if !r#match::query::has_id(match_id).await? {
-        ctx.reply("Match does not exist.").await?;
+        r#match::response::err_remove(ctx, match_id).await?;
     } else {
-        ctx.reply("Removing match...").await?;
+        r#match::response::ok_remove_in_progress(ctx, match_id).await?;
         let ids = stats::query::get_ballchasing_ids(match_id).await?;
 
         for id in ids {
@@ -245,7 +245,7 @@ pub async fn remove(
         r#match::query::remove(match_id).await?;
         stats::query::remove(match_id).await?;
 
-        ctx.reply("Removed").await?;
+        r#match::response::ok_remove_complete(ctx, match_id).await?;
     }
 
     Ok(())

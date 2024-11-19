@@ -85,6 +85,49 @@ pub async fn err_create(ctx: Context<'_>, team_id: u64) -> Result<(), Error> {
 
 }
 
+pub async fn ok_remove_in_progress(ctx: Context<'_>, match_id: i32) -> Result<(), Error> {
+
+    ctx.send(
+        poise::reply::CreateReply::default()
+            .embed(
+                utility::response::base()
+                    .title("Removing...")
+                    .field(format!("Match ID: {}", match_id), "_ _", false)
+            )
+    ).await?;
+
+    Ok(())
+}
+
+pub async fn ok_remove_complete(ctx: Context<'_>, match_id: i32) -> Result<(), Error> {
+
+    ctx.send(
+        poise::reply::CreateReply::default()
+            .embed(
+                utility::response::base()
+                    .title("Removed")
+                    .field(format!("Match ID: {}", match_id), "_ _", false)
+            )
+    ).await?;
+
+    Ok(())
+}
+
+pub async fn err_remove(ctx: Context<'_>, match_id: i32) -> Result<(), Error> {
+
+    ctx.send(
+        poise::reply::CreateReply::default()
+            .embed(
+                utility::response::base()
+                    .title("Error")
+                    .field(format!("Match ID {} does not exist.", match_id), "_ _", false)
+            )
+    ).await?;
+
+    Ok(())
+}
+
+
 pub async fn ok_submit(ctx: Context<'_>, match_id: i32) -> Result<(), Error> {
 
     let (team1_id, team2_id, team1_score, team2_score) = r#match::query::score(match_id).await?;
