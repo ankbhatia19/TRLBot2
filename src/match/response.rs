@@ -1,4 +1,5 @@
 use std::fmt::format;
+use poise::ReplyHandle;
 use poise::serenity_prelude::{ChannelId, Mentionable, RoleId, UserId};
 use crate::{player, r#match, team, utility, Context, Error};
 
@@ -128,7 +129,7 @@ pub async fn err_remove(ctx: Context<'_>, match_id: i32) -> Result<(), Error> {
 }
 
 
-pub async fn ok_submit(ctx: Context<'_>, match_id: i32) -> Result<(), Error> {
+pub async fn ok_submit(ctx: Context<'_>, msg: ReplyHandle<'_>, match_id: i32) -> Result<(), Error> {
 
     let (team1_id, team2_id, team1_score, team2_score) = r#match::query::score(match_id).await?;
     let game_scores = r#match::query::tally(match_id).await?;
@@ -143,7 +144,7 @@ pub async fn ok_submit(ctx: Context<'_>, match_id: i32) -> Result<(), Error> {
         .join("\n");
 
     let mut embed = utility::response::base()
-        .title(format!("Match # {}", match_id))
+        .title(format!("Match #{}", match_id))
         .field(
             "Team 1",
             format!("{}", RoleId::new(team1_id).mention()),
@@ -163,19 +164,19 @@ pub async fn ok_submit(ctx: Context<'_>, match_id: i32) -> Result<(), Error> {
     embed = if team1_score > team2_score {
         embed.field(
             "Winner",
-            format!("{} ({} - {})", RoleId::new(team1_id).mention(), team1_score, team2_score),
+            format!("{} **({} - {})**", RoleId::new(team1_id).mention(), team1_score, team2_score),
             false
         )
     } else if team2_score > team1_score {
         embed.field(
             "Winner",
-            format!("{} ({} - {})", RoleId::new(team2_id).mention(), team2_score, team1_score),
+            format!("{} **({} - {})**", RoleId::new(team2_id).mention(), team2_score, team1_score),
             false
         )
     } else {
         embed.field(
             "Winner",
-            "None",
+            "**None**",
             false
         )
     };
@@ -186,7 +187,8 @@ pub async fn ok_submit(ctx: Context<'_>, match_id: i32) -> Result<(), Error> {
         false
     );
 
-    ctx.send(
+    msg.edit(
+        ctx,
         poise::reply::CreateReply::default()
             .reply(true)
             .embed(embed.clone())
@@ -207,22 +209,22 @@ pub async fn ok_submit(ctx: Context<'_>, match_id: i32) -> Result<(), Error> {
 
 }
 
-pub async fn ok_submit_processing(ctx: Context<'_>, match_id: i32) -> Result<(), Error> {
+pub async fn ok_submit_processing(ctx: Context<'_>, match_id: i32) -> Result<(poise::ReplyHandle), Error> {
 
-    ctx.send(
+    let reply = ctx.send(
         poise::reply::CreateReply::default()
             .embed(
                 utility::response::base()
-                    .title(format!("Submitting Match${}...", match_id))
+                    .title(format!("Submitting Match #{}...", match_id))
                     .field(
-                        "If this command takes longer than 5 minutes, poke Waycey.",
                         "_ _",
+                        "Please allow up to 5 minutes for match to process.",
                         false
                     )
             )
     ).await?;
 
-    Ok(())
+    Ok((reply))
 }
 
 pub async fn err_submit_no_matchid(ctx: Context<'_>, match_id: i32) -> Result<(), Error> {
@@ -242,7 +244,7 @@ pub async fn err_submit_no_matchid(ctx: Context<'_>, match_id: i32) -> Result<()
     Ok(())
 }
 
-pub async fn err_submit_missing_usernames(ctx: Context<'_>, match_id: i32, missing: Vec<&str>) -> Result<(), Error> {
+pub async fn err_submit_missing_usernames(ctx: Context<'_>, msg: ReplyHandle<'_>, match_id: i32, missing: Vec<&str>) -> Result<(), Error> {
 
     let missing_str = missing.iter()
         .map(|m| format!("`{}`", m))
@@ -257,7 +259,8 @@ pub async fn err_submit_missing_usernames(ctx: Context<'_>, match_id: i32, missi
             false
         );
 
-    ctx.send(
+    msg.edit(
+        ctx,
         poise::reply::CreateReply::default()
             .reply(true)
             .embed(embed)
@@ -266,7 +269,7 @@ pub async fn err_submit_missing_usernames(ctx: Context<'_>, match_id: i32, missi
     Ok(())
 }
 
-pub async fn err_submit_missing_team(ctx: Context<'_>, match_id: i32, missing: Vec<u64>) -> Result<(), Error> {
+pub async fn err_submit_missing_team(ctx: Context<'_>, msg: ReplyHandle<'_>, match_id: i32, missing: Vec<u64>) -> Result<(), Error> {
     let mentions = if missing.is_empty() {
         "None".to_string()
     } else {
@@ -285,7 +288,8 @@ pub async fn err_submit_missing_team(ctx: Context<'_>, match_id: i32, missing: V
             false
         );
 
-    ctx.send(
+    msg.edit(
+        ctx,
         poise::reply::CreateReply::default()
             .reply(true)
             .embed(embed)

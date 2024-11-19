@@ -9,7 +9,7 @@ use once_cell::sync::Lazy;
 use trust_dns_resolver::TokioAsyncResolver;
 
 // Initialize the HTTP client once and make it globally accessible
-static CLIENT: Lazy<Client> = Lazy::new(|| {
+pub static CLIENT: Lazy<Client> = Lazy::new(|| {
     let resolver = TokioAsyncResolver::tokio_from_system_conf()
         .expect("Failed to create resolver");
 
@@ -19,8 +19,8 @@ static CLIENT: Lazy<Client> = Lazy::new(|| {
         .expect("Failed to build HTTP client")
 });
 
-// Semaphore to manage rate limiting, allowing up to 4 requests per second
-static SEMAPHORE: Lazy<Semaphore> = Lazy::new(|| Semaphore::new(4));
+// Semaphore to manage rate limiting, allowing up to 2 requests per second
+static SEMAPHORE: Lazy<Semaphore> = Lazy::new(|| Semaphore::new(2));
 
 // Helper function to enforce rate limiting
 async fn rate_limited() {

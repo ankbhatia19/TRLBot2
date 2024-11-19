@@ -4,7 +4,10 @@ use poise::serenity_prelude as serenity;
 use tokio::fs::{self, File};
 use tokio::io::AsyncWriteExt;
 use std::path::Path;
+use once_cell::sync::Lazy;
 use poise::futures_util::future::join_all;
+use reqwest::Client;
+use trust_dns_resolver::TokioAsyncResolver;
 use crate::{player, r#match, stats, utility, team, Context, Error};
 
 /// Collection of all match commands
@@ -30,7 +33,7 @@ pub async fn submit(
         return Ok(());
     }
 
-    r#match::response::ok_submit_processing(ctx, match_id).await?;
+    let msg = r#match::response::ok_submit_processing(ctx, match_id).await?;
 
     let save_dir = format!("Replays/{}", match_id);
 
@@ -60,7 +63,7 @@ pub async fn submit(
             }
 
             // Download and save the file if it does not exist
-            let response = reqwest::get(&url).await?;
+            let response = utility::ballchasing::CLIENT.get(&url).send().await?;
             let bytes = response.bytes().await?;
             let mut file = File::create(&file_path).await?;
             file.write_all(&bytes).await?;
@@ -163,11 +166,11 @@ pub async fn submit(
     }
 
     if !unregistered.is_empty() {
-        r#match::response::err_submit_missing_usernames(ctx, match_id, unregistered).await?;
+        r#match::response::err_submit_missing_usernames(ctx, msg, match_id, unregistered).await?;
     } else if !teamless.is_empty() {
-        r#match::response::err_submit_missing_team(ctx, match_id, teamless).await?;
+        r#match::response::err_submit_missing_team(ctx, msg, match_id, teamless).await?;
     } else {
-        r#match::response::ok_submit(ctx, match_id).await?;
+        r#match::response::ok_submit(ctx, msg, match_id).await?;
     }
 
     Ok(())
