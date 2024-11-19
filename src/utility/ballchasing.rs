@@ -19,8 +19,9 @@ pub static CLIENT: Lazy<Client> = Lazy::new(|| {
         .expect("Failed to build HTTP client")
 });
 
-// Semaphore to manage rate limiting, allowing up to 2 requests per second
-static SEMAPHORE: Lazy<Semaphore> = Lazy::new(|| Semaphore::new(2));
+// Semaphore to manage rate limiting, allowing up to 3 requests per second
+// Max is 4 req / sec with diamond privileges
+static SEMAPHORE: Lazy<Semaphore> = Lazy::new(|| Semaphore::new(3));
 
 // Helper function to enforce rate limiting
 async fn rate_limited() {
