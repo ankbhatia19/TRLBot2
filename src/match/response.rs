@@ -244,6 +244,23 @@ pub async fn err_submit_no_matchid(ctx: Context<'_>, match_id: i32) -> Result<()
     Ok(())
 }
 
+pub async fn err_submit_no_games_submitted(ctx: Context<'_>, msg: ReplyHandle<'_>) -> Result<(), Error> {
+    ctx.send(
+        poise::reply::CreateReply::default()
+            .embed(
+                utility::response::base()
+                    .title("Error Submitting")
+                    .field(
+                        "Must provide at least one replay.",
+                        "Use `/match submit` to drag/drop replays.",
+                        false
+                    )
+            )
+    ).await?;
+
+    Ok(())
+}
+
 pub async fn err_submit_missing_usernames(ctx: Context<'_>, msg: ReplyHandle<'_>, match_id: i32, missing: Vec<&str>) -> Result<(), Error> {
 
     let missing_str = missing.iter()

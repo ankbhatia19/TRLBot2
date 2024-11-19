@@ -115,6 +115,11 @@ pub async fn submit(
     let (team1_id, team2_id) = r#match::query::get_teams(match_id).await?;
     let data_per_game = stats::query::get_raw(match_id).await?;
 
+    if data_per_game.is_empty() {
+        r#match::response::err_submit_no_games_submitted(ctx, msg).await?;
+        return Ok(())
+    }
+
     // TODO: Much better logging needed
     for (game_num, data) in data_per_game.iter().enumerate() {
 
