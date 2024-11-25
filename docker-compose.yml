@@ -7,6 +7,8 @@ services:
       - 8.8.8.8 # Google public DNS
       - 1.1.1.1 # Cloudflare public DNS
     image: ghcr.io/ankbhatia19/trlbot2:latest
+    labels:
+      com.centurylinklabs.watchtower.enable: "true" # Only this container will be watched
     environment:
       DISCORD_TOKEN: ${DISCORD_TOKEN}
       BALLCHASING_TOKEN: ${BALLCHASING_TOKEN}
@@ -27,4 +29,5 @@ services:
       - WATCHTOWER_POLL_INTERVAL=60
       - WATCHTOWER_NOTIFICATIONS=shoutrrr
       - WATCHTOWER_NOTIFICATION_URL=${WATCHTOWER_WEBHOOK_URL}
+      - WATCHTOWER_LABEL_ENABLE=true
     restart: always
