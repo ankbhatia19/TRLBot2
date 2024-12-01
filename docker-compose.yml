@@ -3,6 +3,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    dns:
+      - 8.8.8.8 # Google public DNS
+      - 1.1.1.1 # Cloudflare public DNS
     image: ghcr.io/ankbhatia19/trlbot2:latest
     labels:
       com.centurylinklabs.watchtower.enable: "true" # Only this container will be watched
@@ -13,7 +16,6 @@ services:
       REPORT_CHANNEL: ${REPORT_CHANNEL}
     volumes:
       - ./${BALLCHASING_GROUP}.sqlite:/app/${BALLCHASING_GROUP}.sqlite
-      - ./quotes.json:/app/quotes.json
     working_dir: /app
     restart: unless-stopped
 
@@ -22,7 +24,7 @@ services:
     container_name: watchtower
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ~/.docker/config.json:/config.json:ro # Mount Docker credentials
+      - ~/.docker/config.json:/config.json:ro
     environment:
       - WATCHTOWER_POLL_INTERVAL=60
       - WATCHTOWER_NOTIFICATIONS=shoutrrr

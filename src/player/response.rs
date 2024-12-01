@@ -1,6 +1,6 @@
 use poise::serenity_prelude as serenity;
 use poise::serenity_prelude::CreateEmbed;
-use serenity::{Mentionable, UserId, CacheHttp};
+use serenity::{Mentionable, UserId};
 use serenity::builder::{
     CreateButton,
     CreateActionRow,
@@ -9,7 +9,6 @@ use serenity::builder::{
 };
 use serenity::futures::StreamExt;
 use serenity::model::prelude::*;
-use serenity::prelude::*;
 
 use crate::{player, team, utility, Context, Error};
 

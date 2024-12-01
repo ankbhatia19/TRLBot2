@@ -1,17 +1,15 @@
-use std::future::Future;
+use std::any::Any;
 use poise::serenity_prelude as serenity;
-
 use tokio::fs::{self, File};
 use tokio::io::AsyncWriteExt;
 use std::path::Path;
-use once_cell::sync::Lazy;
 use poise::futures_util::future::join_all;
-use reqwest::Client;
-use trust_dns_resolver::TokioAsyncResolver;
+use poise::serenity_prelude::{ChannelId, ChannelType};
+use poise::serenity_prelude::ChannelType::Forum;
 use crate::{player, r#match, stats, utility, team, Context, Error};
 
 /// Collection of all match commands
-#[poise::command(slash_command, subcommands("create", "submit", "info", "remove"))]
+#[poise::command(slash_command, subcommands("create", "submit", "info", "remove", "reschedule"))]
 pub async fn r#match(ctx: Context<'_>) -> Result<(), Error> { Ok(()) }
 
 /// Submit a match given a match ID.
@@ -259,6 +257,29 @@ pub async fn remove(
     Ok(())
 }
 
+#[poise::command(slash_command)]
+pub async fn reschedule(
+    ctx: Context<'_>,
+    #[description = "The match ID to reschedule"] match_id: i32
+) -> Result<(), Error> {
+    let channel_id: u64 = 1308556456886407279;
+
+    ChannelId::new(channel_id).create_forum_post(
+        ctx.http(),
+        serenity::CreateForumPost::new(
+            "Test Title",
+            serenity::CreateMessage::default()
+                .embed(
+                    utility::response::base()
+                        .title("Test Embed")
+                )
+        )
+    ).await?;
+
+
+    Ok(())
+}
+
 // This proof-of-concept exists just in case Discord ever adds file uploads to modals
 #[poise::command(slash_command)]
 pub async fn modalsubmit(ctx: Context<'_>) -> Result<(), Error> {
@@ -288,12 +309,18 @@ pub async fn modalsubmit(ctx: Context<'_>) -> Result<(), Error> {
             interaction.create_followup(
                 &ctx.serenity_context(),
                 serenity::CreateInteractionResponseFollowup::default()
-                    .content(format!("Thank you for your response, {} {}", first_name, last_name))
+                    .content(
+                        format!(
+                            "Thank you for your response, {} {}. Your hobbies are {}.",
+                            first_name, last_name, hobbies
+                        )
+                    )
             ).await?;
 
         }
         Context::Prefix(_) => {}
     }
+
 
     Ok(())
 }
