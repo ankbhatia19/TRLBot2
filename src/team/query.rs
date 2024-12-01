@@ -1,5 +1,4 @@
-use rusqlite::{params, Connection, Result};
-use serde_json;
+use rusqlite::{params, Result};
 use crate::utility;
 
 pub async fn init() -> Result<()> {

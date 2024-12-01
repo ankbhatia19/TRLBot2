@@ -23,5 +23,8 @@ RUN apt-get update && apt-get install -y \
 # Copy the compiled binary from the builder
 COPY --from=builder /usr/src/bot/target/release/TRLBot2 /app/TRLBot2
 
+# Also copy the quotes.json, so that way it does not have to be mounted
+COPY quotes.json /app/quotes.json
+
 # Set the entrypoint
 ENTRYPOINT ["/app/TRLBot2"]

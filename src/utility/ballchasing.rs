@@ -4,15 +4,12 @@ use reqwest::multipart;
 use serde_json::{json, Value};
 use std::{fs, time::Duration};
 use tokio::sync::Semaphore;
-use tokio::time::{sleep, Instant};
+use tokio::time::{sleep};
 use once_cell::sync::Lazy;
 use trust_dns_resolver::TokioAsyncResolver;
 
 // Initialize the HTTP client once and make it globally accessible
 pub static CLIENT: Lazy<Client> = Lazy::new(|| {
-    let resolver = TokioAsyncResolver::tokio_from_system_conf()
-        .expect("Failed to create resolver");
-
     Client::builder()
         .use_rustls_tls()
         .build()

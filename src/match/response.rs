@@ -1,4 +1,3 @@
-use std::fmt::format;
 use poise::ReplyHandle;
 use poise::serenity_prelude::{ChannelId, Mentionable, RoleId, UserId};
 use crate::{player, r#match, team, utility, Context, Error};
@@ -209,7 +208,7 @@ pub async fn ok_submit(ctx: Context<'_>, msg: ReplyHandle<'_>, match_id: i32) ->
 
 }
 
-pub async fn ok_submit_processing(ctx: Context<'_>, match_id: i32) -> Result<(poise::ReplyHandle), Error> {
+pub async fn ok_submit_processing(ctx: Context<'_>, match_id: i32) -> Result<ReplyHandle, Error> {
 
     let reply = ctx.send(
         poise::reply::CreateReply::default()
@@ -224,7 +223,7 @@ pub async fn ok_submit_processing(ctx: Context<'_>, match_id: i32) -> Result<(po
             )
     ).await?;
 
-    Ok((reply))
+    Ok(reply)
 }
 
 pub async fn err_submit_no_matchid(ctx: Context<'_>, match_id: i32) -> Result<(), Error> {

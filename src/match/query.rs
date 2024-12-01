@@ -1,5 +1,4 @@
 use rusqlite::{params, Result};
-use serde_json;
 use rand::Rng;
 use crate::utility;
 
