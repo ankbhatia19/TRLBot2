@@ -5,7 +5,8 @@ mod utility;
 mod stats;
 mod team;
 mod r#match;
-
+mod schedule;
+mod register;
 
 struct Data {} // User data, which is stored and accessible in all command invocations
 type Error = Box<dyn std::error::Error + Send + Sync>;
@@ -31,6 +32,7 @@ async fn main() {
                 player::cmd::player(),
                 r#match::cmd::r#match(),
                 team::cmd::team(),
+                register::cmd::register(),
                 // End command list
             ], ..Default::default()
         })

@@ -276,51 +276,5 @@ pub async fn reschedule(
         )
     ).await?;
 
-
-    Ok(())
-}
-
-// This proof-of-concept exists just in case Discord ever adds file uploads to modals
-#[poise::command(slash_command)]
-pub async fn modalsubmit(ctx: Context<'_>) -> Result<(), Error> {
-
-    match ctx {
-        Context::Application(atx) => {
-
-            let interaction = atx.interaction;
-
-            let modal = serenity::CreateQuickModal::new("About you")
-                .timeout(std::time::Duration::from_secs(600))
-                .short_field("First name")
-                .short_field("Last name")
-                .paragraph_field("Hobbies and interests");
-
-
-            let response = interaction.quick_modal(atx.serenity_context, modal).await?.unwrap();
-            let inputs = response.inputs;
-            let (first_name, last_name, hobbies) = (&inputs[0], &inputs[1], &inputs[2]);
-
-            response.interaction.create_response(
-                &ctx.serenity_context(),
-                serenity::CreateInteractionResponse::Acknowledge
-            ).await?;
-
-
-            interaction.create_followup(
-                &ctx.serenity_context(),
-                serenity::CreateInteractionResponseFollowup::default()
-                    .content(
-                        format!(
-                            "Thank you for your response, {} {}. Your hobbies are {}.",
-                            first_name, last_name, hobbies
-                        )
-                    )
-            ).await?;
-
-        }
-        Context::Prefix(_) => {}
-    }
-
-
     Ok(())
 }
