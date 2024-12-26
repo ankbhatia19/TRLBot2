@@ -9,7 +9,7 @@ use poise::serenity_prelude::ChannelType::Forum;
 use crate::{player, r#match, stats, utility, team, Context, Error};
 
 /// Collection of all match commands
-#[poise::command(slash_command, subcommands("create", "submit", "info", "remove", "reschedule"))]
+#[poise::command(slash_command, subcommands("create", "submit", "info", "remove"))]
 pub async fn r#match(ctx: Context<'_>) -> Result<(), Error> { Ok(()) }
 
 /// Submit a match given a match ID.
@@ -253,74 +253,6 @@ pub async fn remove(
 
         r#match::response::ok_remove_complete(ctx, match_id).await?;
     }
-
-    Ok(())
-}
-
-#[poise::command(slash_command)]
-pub async fn reschedule(
-    ctx: Context<'_>,
-    #[description = "The match ID to reschedule"] match_id: i32
-) -> Result<(), Error> {
-    let channel_id: u64 = 1308556456886407279;
-
-    ChannelId::new(channel_id).create_forum_post(
-        ctx.http(),
-        serenity::CreateForumPost::new(
-            "Test Title",
-            serenity::CreateMessage::default()
-                .embed(
-                    utility::response::base()
-                        .title("Test Embed")
-                )
-        )
-    ).await?;
-
-
-    Ok(())
-}
-
-// This proof-of-concept exists just in case Discord ever adds file uploads to modals
-#[poise::command(slash_command)]
-pub async fn modalsubmit(ctx: Context<'_>) -> Result<(), Error> {
-
-    match ctx {
-        Context::Application(atx) => {
-
-            let interaction = atx.interaction;
-
-            let modal = serenity::CreateQuickModal::new("About you")
-                .timeout(std::time::Duration::from_secs(600))
-                .short_field("First name")
-                .short_field("Last name")
-                .paragraph_field("Hobbies and interests");
-
-
-            let response = interaction.quick_modal(atx.serenity_context, modal).await?.unwrap();
-            let inputs = response.inputs;
-            let (first_name, last_name, hobbies) = (&inputs[0], &inputs[1], &inputs[2]);
-
-            response.interaction.create_response(
-                &ctx.serenity_context(),
-                serenity::CreateInteractionResponse::Acknowledge
-            ).await?;
-
-
-            interaction.create_followup(
-                &ctx.serenity_context(),
-                serenity::CreateInteractionResponseFollowup::default()
-                    .content(
-                        format!(
-                            "Thank you for your response, {} {}. Your hobbies are {}.",
-                            first_name, last_name, hobbies
-                        )
-                    )
-            ).await?;
-
-        }
-        Context::Prefix(_) => {}
-    }
-
 
     Ok(())
 }
