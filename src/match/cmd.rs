@@ -9,7 +9,7 @@ use poise::serenity_prelude::ChannelType::Forum;
 use crate::{player, r#match, stats, utility, team, Context, Error};
 
 /// Collection of all match commands
-#[poise::command(slash_command, subcommands("create", "submit", "info", "remove", "reschedule"))]
+#[poise::command(slash_command, subcommands("create", "submit", "info", "remove"))]
 pub async fn r#match(ctx: Context<'_>) -> Result<(), Error> { Ok(()) }
 
 /// Submit a match given a match ID.
@@ -253,28 +253,6 @@ pub async fn remove(
 
         r#match::response::ok_remove_complete(ctx, match_id).await?;
     }
-
-    Ok(())
-}
-
-#[poise::command(slash_command)]
-pub async fn reschedule(
-    ctx: Context<'_>,
-    #[description = "The match ID to reschedule"] match_id: i32
-) -> Result<(), Error> {
-    let channel_id: u64 = 1308556456886407279;
-
-    ChannelId::new(channel_id).create_forum_post(
-        ctx.http(),
-        serenity::CreateForumPost::new(
-            "Test Title",
-            serenity::CreateMessage::default()
-                .embed(
-                    utility::response::base()
-                        .title("Test Embed")
-                )
-        )
-    ).await?;
 
     Ok(())
 }
