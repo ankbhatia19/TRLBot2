@@ -18,7 +18,7 @@ pub static CLIENT: Lazy<Client> = Lazy::new(|| {
 
 // Semaphore to manage rate limiting, allowing up to 2 requests per second
 // Max is 4 req / sec with diamond privileges
-static SEMAPHORE: Lazy<Semaphore> = Lazy::new(|| Semaphore::new(2));
+static SEMAPHORE: Lazy<Semaphore> = Lazy::new(|| Semaphore::new(1));
 
 // Helper function to enforce rate limiting
 async fn rate_limited() {
