@@ -174,6 +174,47 @@ pub async fn stats_core(player_id: u64) -> Result<(i32, f64, f64, f64, f64)> {
     )
 }
 
+pub async fn stats_leaderboard() -> Result<Vec<(u64, i32, f64, f64, f64, f64, f64)>> {
+    let db = utility::query::db().await?;
+
+    let mut stmt = db.prepare(
+        "SELECT
+            player_id,
+            COUNT(DISTINCT match_id || '-' || game_num) AS games,
+            COALESCE(AVG(goals), 0) AS avg_goals,
+            COALESCE(AVG(shots), 0) AS avg_shots,
+            COALESCE(AVG(assists), 0) AS avg_assists,
+            COALESCE(AVG(saves), 0) AS avg_saves,
+            250.0 + (250.0 * (
+                COALESCE(AVG(goals), 0)
+                + (COALESCE(AVG(shots), 0) / 3.0)
+                + (COALESCE(AVG(assists), 0) * 0.75)
+                + (COALESCE(AVG(saves), 0) * 0.6)
+            )) AS rating
+        FROM
+            stats
+        GROUP BY
+            player_id
+        ORDER BY
+            rating DESC;"
+    )?;
+
+    let rows = stmt.query_map([], |row| {
+        Ok((
+            row.get::<_, u64>(0)?, // player_id
+            row.get::<_, i32>(1)?, // games
+            row.get::<_, f64>(2)?, // avg_goals
+            row.get::<_, f64>(3)?, // avg_shots
+            row.get::<_, f64>(4)?, // avg_assists
+            row.get::<_, f64>(5)?, // avg_saves
+            row.get::<_, f64>(6)?, // rating
+        ))
+    })?;
+
+    println!("Finished collecting statistics for leaderboard");
+    Ok(rows.collect::<Result<Vec<_>, _>>()?)
+}
+
 
 pub async fn stats_demos(player_id: u64) -> Result<(i32, f64, f64)> {
     let db = utility::query::db().await?;

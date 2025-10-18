@@ -3,7 +3,7 @@ use crate::{player, Context, Error};
 
 
 /// Register and view a player
-#[poise::command(slash_command, subcommands("register", "info", "remove"))]
+#[poise::command(slash_command, subcommands("register", "info", "remove", "leaderboard"))]
 pub async fn player(ctx: Context<'_>) -> Result<(), Error> { Ok(()) }
 
 /// Displays your or another user's per-game statistics
@@ -53,6 +53,17 @@ pub async fn remove(
         player::query::remove(&username, player_id).await?;
         player::response::ok_remove(ctx, &username, player_id).await?;
     }
+
+    Ok(())
+}
+
+/// Displays top 10 leaderboard
+#[poise::command(slash_command)]
+pub async fn leaderboard(
+    ctx: Context<'_>,
+) -> Result<(), Error> {
+
+    ctx.send(player::response::leaderboard(ctx).await?).await?;
 
     Ok(())
 }

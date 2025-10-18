@@ -337,3 +337,44 @@ pub async fn info(ctx: Context<'_>, player_id: u64) -> Result<(), Error> {
 
     Ok(())
 }
+
+pub async fn leaderboard(ctx: Context<'_>) -> Result<poise::reply::CreateReply, Error> {
+
+    let player_leaderboard = player::query::stats_leaderboard().await?;
+
+    let mut player_leaderboard_str = "".to_string();
+    let mut player_leaderboard_nums = "".to_string();
+
+    for (i, player) in player_leaderboard.iter().take(10).enumerate() {
+        player_leaderboard_str.push_str(&format!(
+            "{}.\t{:<32} : {:.2}\n",
+            i + 1,
+            UserId::new(player.0).to_user(ctx.http()).await?,
+            player.6
+        ));
+
+        player_leaderboard_nums.push_str(&format!(
+            "{:.2}\n",
+            player.6
+        ));
+    }
+
+    println!("{}", player_leaderboard_str);
+
+    Ok(poise::reply::CreateReply::default()
+        .reply(true)
+        .embed(
+            utility::response::base()
+                .title("Leaderboard")
+                .field("",
+                       player_leaderboard_str,
+                       false
+                )
+                /*.field("",
+                    player_leaderboard_nums,
+                       true
+                )*/
+        )
+    )
+
+}
