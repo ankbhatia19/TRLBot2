@@ -211,7 +211,6 @@ pub async fn stats_leaderboard() -> Result<Vec<(u64, i32, f64, f64, f64, f64, f6
         ))
     })?;
 
-    println!("Finished collecting statistics for leaderboard");
     Ok(rows.collect::<Result<Vec<_>, _>>()?)
 }
 

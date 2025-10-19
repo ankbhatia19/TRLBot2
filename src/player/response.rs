@@ -359,8 +359,6 @@ pub async fn leaderboard(ctx: Context<'_>) -> Result<poise::reply::CreateReply, 
         ));
     }
 
-    println!("{}", player_leaderboard_str);
-
     Ok(poise::reply::CreateReply::default()
         .reply(true)
         .embed(
